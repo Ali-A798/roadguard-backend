@@ -14,7 +14,15 @@ app.get("/", (req, res) => {
 
 // ✅ Main alert endpoint — called by ESP32 or frontend
 app.post("/alert", async (req, res) => {
-  const { name, latitude, longitude, contacts } = req.body;
+  const { latitude, longitude } = req.body;
+
+  if (!registeredUser) {
+    return res.status(400).json({
+      error: "No registered user found",
+    });
+  }
+
+  const { name, contacts } = registeredUser;
 
   // Validate incoming data
   if (!name || !latitude || !longitude || !contacts || contacts.length === 0) {
@@ -73,6 +81,33 @@ app.post("/esp32-trigger", async (req, res) => {
 
   // NOTE: Actual SMS sending happens via /alert endpoint
   // ESP32 trigger is logged — frontend polls or websocket can handle next step
+});
+
+// Store user details temporarily
+let registeredUser = null;
+
+// Register user from frontend
+app.post("/register", (req, res) => {
+  const { name, phone, contacts } = req.body;
+
+  if (!name || !phone || !contacts || contacts.length === 0) {
+    return res.status(400).json({
+      error: "Missing required fields",
+    });
+  }
+
+  registeredUser = {
+    name,
+    phone,
+    contacts,
+  };
+
+  console.log("✅ User Registered:", registeredUser);
+
+  res.status(200).json({
+    success: true,
+    message: "Details saved successfully!",
+  });
 });
 
 const PORT = process.env.PORT || 3000;
